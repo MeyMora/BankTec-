@@ -36,8 +36,8 @@ inicio_menu:
         cmp al, '2'
         je opcion2
                          
-        cmp al, ''
-        je opcion 3
+        cmp al, '3'
+        je opcion3
 
         cmp al, '4'
         je opcion4 
@@ -91,7 +91,7 @@ salir_programa:
        call imprimir_cadena   
        
        mov ah,4Ch
-       int21h
+       int 21h
        
 main endp
 
@@ -130,6 +130,9 @@ imprimir_cadena proc
     ret
     
 imprimir_cadena endp
+
+
+
 
 
 end main
