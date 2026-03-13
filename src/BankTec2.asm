@@ -37,9 +37,20 @@ msgCuentaExiste db 13,10, 'Error: el numero de cuenta ya existe.',13,10, '$'
 msgCuentaGuardada db 13,10,'Cuenta registrada correctamente.',13,10, '$'
 msgSinEspacio db 13,10,'Error: no hay espacio para mas cuentas.' ,13,10, '$'
 
+
+;Para pedir el titular de la cuenta
+msgPedirNombre db 13,10, 'Ingrese el nombre del titular (max 20 caracteres): $'
+msgPedirSaldo  db 13,10, 'Ingrese el saldo inicial(entero con 4 decimales implicitos)$'
+msgErrorNombre db 13,10, 'Error: el nombre no puede estar vacio.', 13, 10, '$'
+msgErrorSaldo  db 13,10, 'Error: saldo invalido.',13,10,'$'
+
 ;variables temporales 
 numeroCuentaTemp dw 0
-indiceEncontrado dw 0
+indiceEncontrado dw 0  
+saldoTemp dw 0 
+
+bufferNombre db MAX_NOMBRE, 0, MAX_NOMBRE+1 dup(0)
+
 
 ;arreglos paralelos para manejar las cuentas
 cuentasNumero dw MAX_CUENTAS dup(?)
@@ -138,7 +149,8 @@ imprimir_cadena proc
     ret
 imprimir_cadena endp
 
-crear_cuenta proc
+crear_cuenta proc 
+    ;Pedir el numero de cuenta
     lea dx, msgPedirCuenta
     call imprimir_cadena
 
@@ -156,44 +168,57 @@ crear_cuenta proc
     ;Verificar si hay espacio para crear la cuenta
     mov ax, contadorCuentas
     cmp ax, MAX_CUENTAS
-    jae sin_espacio
-    
-    ;Guardar cuenta nueva 
-    mov si, contadorCuentas
-    shl si, 1     
-    
-    mov ax, numeroCuentaTemp 
-    mov cuentasNumero[si], ax 
+    jae sin_espacio   
     
     
-    ;saldo inicial = 0 
-    mov word ptr cuentasSaldo[si], 0
+    ;Pedimos el nombre de la persona
+    lea dx, msgPedirNombre
+    call imprimir_cadena
     
-    ;Estado de la cuenta activa en 1 
+    call leer_nombre
+    jc fin_crear_cuenta
+    
+    ;pedimos el saldo inicial
+    lea dx, msgPedirSaldo
+    call imprimir_cadena
+    
+    call leer_entero
+    jc saldo_invalido
+    
+    mov saldoTemp, ax
+    
+    ;indice actual de contadorCuentas
     mov bx, contadorCuentas
+    
+    ;Guardar numero cuenta
+    mov si, bx
+    shl si, 1
+    mov ax, numeroCuentaTemp
+    mov cuentasNumero[si], ax
+    
+    
+    ;Guardar Saldo
+    mov ax, saldoTemp
+    mov cuentasSaldo[si], ax
+    
+    
+    ;Guardar el estado de la cuenta activa en 1 
     mov cuentasEstado[bx], 1
     
-    ;limpiar nombre(20 bytes)
+    ;Guardar el nombre del titular 
+    call guardar_nombre_en_indice
     
+    ;aumentar contador
     mov ax, contadorCuentas
-    mov bl, MAX_NOMBRE
-    mul bl  ;AX = indice *20
-    mov si, ax
-    mov cx, MAX_NOMBRE
+    inc ax
+    mov contadorCuentas,ax
     
-limpiar_nombre:
-        mov cuentasNombre[si], 0 
-        inc si 
-        loop limpiar_nombre
-        
-        ;aumentar contador
-        mov ax, contadorCuentas
-        inc ax
-        mov contadorCuentas, ax
-        
-        lea dx,msgCuentaGuardada
-        call imprimir_cadena 
-        jmp fin_crear_cuenta
+    lea dx, msgCuentaGuardada
+    call imprimir_cadena
+    jmp fin_crear_cuenta
+    
+   
+    
     
     
 cuenta_repetida:
@@ -204,14 +229,20 @@ cuenta_repetida:
         
 sin_espacio:
        lea dx, msgSinEspacio
-       call imprimir_cadena
+       call imprimir_cadena  
+       jmp fin_crear_cuenta
+       
+       
+saldo_invalido:
+    lea dx, msgErrorSaldo
+    call imprimir_cadena       
+    jmp fin_crear_cuenta
+              
 fin_crear_cuenta:
     ret
 crear_cuenta endp
 
 
-
-   
 
 ;Para leer un entero y conversion ASCII
 leer_entero proc
@@ -293,13 +324,17 @@ buscar_loop:
        je no_encontrada
        
        cmp cuentasNumero[si], ax
+       jne siguiente
+        
+        
+       cmp cuentasEstado[bx],1    
        je encontrada
-       
-       add si, 2
-       inc bx
-       dec cx
-       jmp buscar_loop
-       
+
+siguiente:
+        add si, 2
+        inc bx
+        dec cx
+        jmp buscar_loop       
 encontrada:
        mov indiceEncontrado, bx
        stc
@@ -318,6 +353,104 @@ salir_busqueda:
 
 buscar_cuenta_por_numero endp
 
+
+
+leer_nombre proc
+       push ax
+       push dx
+       
+       lea dx, bufferNombre
+       mov ah, 0Ah
+       int 21h
+       
+       ;bufferNombre +1 = cantidad de chars escritos
+       mov al, [bufferNombre+1]
+       cmp al, 0
+       je nombre_vacio
+       
+       clc
+       jmp salir_leer_nombre
+
+nombre_vacio:
+    lea dx, msgErrorNombre
+    call imprimir_cadena
+    stc
+    
+salir_leer_nombre:
+    pop dx
+    pop ax
+    ret
+
+leer_nombre endp
+
+
+guardar_nombre_en_indice proc
+       ;Entrada
+       ;BX = indice de cuenta a guardar
+       
+       push ax
+       push bx
+       push cx
+       push dx
+       push si 
+       push di
+       
+       ;calcular el offset destino que es igual a indice * MAX_NOMBRE
+       xor di,di
+       mov cx, bx
+       
+calc_offset:
+    cmp cx, 0
+    je offset_listo
+    add di, MAX_NOMBRE
+    dec cx
+    jmp calc_offset   
+    
+offset_listo:
+     ;limpia los 20 bytes del nombre destino\ 
+     mov si, di 
+     mov cx, MAX_NOMBRE
+
+     
+limpiar_destino:
+       lea bx, cuentasNombre
+       add bx, si
+       mov byte ptr [bx],0
+       inc si 
+       loop limpiar_destino
+        
+        
+       ;copiar el nombre
+       lea si, bufferNombre+2 
+       mov cl, [bufferNombre+1]
+       xor ch, ch
+       
+copiar_nombre:
+    cmp cx, 0
+    je fin_guardar_nombre
+    
+    mov al, [si]
+    mov cuentasNombre[di], al
+    inc si 
+    inc di
+    dec cx
+    jmp copiar_nombre
+    
+                
+fin_guardar_nombre:
+    pop di 
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+guardar_nombre_en_indice endp
+
+
+
+
+end main
 
 
 
