@@ -23,7 +23,12 @@ msgSaldo    db 13,10,'[Aqui ira Consultar saldo]',13,10,'$'
 msgReporte  db 13,10,'[Aqui ira Mostrar reporte]',13,10,'$'
 msgDesact   db 13,10,'[Aqui ira Desactivar cuenta]',13,10,'$'
 msgSalir    db 13,10,'Saliendo del sistema...',13,10,'$'
-                                                          
+msgMonto db 13,10,'Ingrese el monto:$'
+msgDepositoOk db 13,10,'Deposito realizado$',13,10,'$'
+msgRetiroOk db 13,10,'Retiro realizado$',13,10,'$'
+msgErrorFondos db 13,10,'Fondos insuficientes$',13,10,'$'
+
+saltoLinea db 13,10,'$'                                                          
                                                           
 ;para crear una cuenta                                                          
 msgPedirCuenta db 13,10,'Ingrese el numero de cuenta: $'
@@ -99,19 +104,17 @@ opcion1:
        jmp inicio_menu
 
 opcion2:
-       lea dx,msgDeposito
-       call imprimir_cadena
+       call depositar_dinero
        jmp inicio_menu
 
 opcion3:
-       lea dx,msgRetiro
-       call imprimir_cadena
+       call retirar_dinero
        jmp inicio_menu
 
 opcion4:
-       lea dx,msgSaldo
-       call imprimir_cadena
+       call consultar_saldo
        jmp inicio_menu
+
 
 opcion5:
        lea dx, msgReporte
@@ -147,7 +150,52 @@ imprimir_cadena proc
     mov ah,09h
     int 21h
     ret
-imprimir_cadena endp
+imprimir_cadena endp 
+
+
+imprimir_numero proc
+    push ax
+    push bx
+    push cx
+    push dx
+
+    cmp ax,0
+    jne convertir
+
+    mov dl,'0'
+    mov ah,02h
+    int 21h
+    jmp fin_impresion
+
+convertir:
+    mov bx,10
+    xor cx,cx
+
+dividir:
+    xor dx,dx
+    div bx
+    push dx
+    inc cx
+    cmp ax,0
+    jne dividir
+
+imprimir_digito:
+    pop dx
+    add dl,'0'
+    mov ah,02h
+    int 21h
+    loop imprimir_digito
+
+fin_impresion:
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+imprimir_numero endp
+
+
+
 
 crear_cuenta proc 
     ;Pedir el numero de cuenta
@@ -450,7 +498,165 @@ guardar_nombre_en_indice endp
 
 
 
-end main
+validar_monto proc
+
+    cmp ax,0
+    jle monto_invalido
+
+    mov bx,1
+    ret
+
+monto_invalido:
+    mov bx,0
+    ret
+
+validar_monto endp
+
+
+
+depositar_dinero proc
+
+    lea dx,msgPedirCuenta
+    call imprimir_cadena
+
+    call leer_entero
+    jc fin_deposito
+
+    mov numeroCuentaTemp,ax
+
+    call buscar_cuenta_por_numero
+    jnc cuenta_no_encontrada
+
+    mov bx,indiceEncontrado
+    mov si,bx
+    shl si,1
+
+    lea dx,msgMonto
+    call imprimir_cadena
+
+    call leer_entero
+    jc fin_deposito
+
+    mov ax,ax
+    call validar_monto
+
+    cmp bx,0
+    je error_monto_deposito
+
+    mov bx,indiceEncontrado
+    mov si,bx
+    shl si,1
+
+    mov ax,cuentasSaldo[si]
+    add ax,ax
+    mov cuentasSaldo[si],ax
+
+    lea dx,msgDepositoOk
+    call imprimir_cadena
+
+    jmp fin_deposito
+
+cuenta_no_encontrada:
+    lea dx,msgErrorCuenta
+    call imprimir_cadena
+    jmp fin_deposito
+
+error_monto_deposito:
+    lea dx,msgErrorSaldo
+    call imprimir_cadena
+
+
+fin_deposito:
+    ret
+
+depositar_dinero endp
+
+retirar_dinero proc
+
+    lea dx,msgPedirCuenta
+    call imprimir_cadena
+
+    call leer_entero
+    jc fin_retiro
+
+    mov numeroCuentaTemp,ax
+
+    call buscar_cuenta_por_numero
+    jnc cuenta_no_encontrada_r
+
+    mov bx,indiceEncontrado
+    mov si,bx
+    shl si,1
+
+    lea dx,msgMonto
+    call imprimir_cadena
+
+    call leer_entero
+    jc fin_retiro
+
+    mov dx,ax
+
+    mov ax,cuentasSaldo[si]
+    cmp ax,dx
+    jl fondos_insuficientes
+
+    sub ax,dx
+    mov cuentasSaldo[si],ax
+
+    lea dx,msgRetiroOk
+    call imprimir_cadena
+
+    jmp fin_retiro
+
+cuenta_no_encontrada_r:
+    lea dx,msgErrorCuenta
+    call imprimir_cadena
+    jmp fin_retiro
+
+fondos_insuficientes:
+    lea dx,msgErrorFondos
+    call imprimir_cadena
+
+fin_retiro:
+    ret
+
+retirar_dinero endp
+
+
+consultar_saldo proc
+
+    lea dx,msgPedirCuenta
+    call imprimir_cadena
+
+    call leer_entero
+    jc fin_consulta
+
+    mov numeroCuentaTemp,ax
+
+    call buscar_cuenta_por_numero
+    jnc cuenta_noo_encontrada
+
+    mov bx,indiceEncontrado
+    mov si,bx
+    shl si,1
+
+    ; SALTO DE LINEA
+    lea dx,saltoLinea
+    call imprimir_cadena
+
+    mov ax,cuentasSaldo[si]
+    call imprimir_numero
+
+    jmp fin_consulta
+
+cuenta_noo_encontrada:
+    lea dx,msgErrorCuenta
+    call imprimir_cadena
+
+fin_consulta:
+    ret
+
+consultar_saldo endp
 
 
 
