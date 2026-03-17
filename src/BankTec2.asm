@@ -29,7 +29,7 @@ msgRetiroOk db 13,10,'Retiro realizado$',13,10,'$'
 msgErrorFondos db 13,10,'Fondos insuficientes$',13,10,'$'
 
 saltoLinea db 13,10,'$'                                                          
-                                                          
+msgSaldoActual db 13,10,'Saldo actual: $'                                                          
 ;para crear una cuenta                                                          
 msgPedirCuenta db 13,10,'Ingrese el numero de cuenta: $'
 msgErrorCuenta db 13,10,'Error: solo se permiten digitos.',13,10,'$'
@@ -41,18 +41,44 @@ msgErrorVacio  db 13,10,'Error: debe ingresar al menos un digito.',13,10,'$'
 msgCuentaExiste db 13,10, 'Error: el numero de cuenta ya existe.',13,10, '$'
 msgCuentaGuardada db 13,10,'Cuenta registrada correctamente.',13,10, '$'
 msgSinEspacio db 13,10,'Error: no hay espacio para mas cuentas.' ,13,10, '$'
-
+msgCuentaNoExiste db 13,10,'Error: la cuenta no existe.',13,10,'$'
 
 ;Para pedir el titular de la cuenta
 msgPedirNombre db 13,10, 'Ingrese el nombre del titular (max 20 caracteres): $'
-msgPedirSaldo  db 13,10, 'Ingrese el saldo inicial(entero con 4 decimales implicitos)$'
+msgPedirSaldo  db 13,10, 'Ingrese el saldo inicial(entero con 4 decimales implicitos): $'
 msgErrorNombre db 13,10, 'Error: el nombre no puede estar vacio.', 13, 10, '$'
 msgErrorSaldo  db 13,10, 'Error: saldo invalido.',13,10,'$'
 
+;mensajes para el reporte
+msgRepActivas   db 'Cuentas activas   : $'
+msgRepInactivas db 'Cuentas inactivas : $'
+msgRepSaldoTot  db 'Saldo total       : $'
+msgRepMayor     db 'Mayor saldo       : $'
+msgRepMenor     db 'Menor saldo       : $'
+msgSinCuentas   db 13,10,'No hay cuentas registradas.',13,10,'$'
+msgSaltoLinea   db 13,10,'$'
+
+;mensajes para desactivar
+msgListaCtas    db 13,10,'Cuentas registradas:',13,10,'$'
+msgNumCta       db ' Num: $'
+msgSepNom       db ' - $'
+msgSaldoCta     db '  Saldo: $'
+msgEstActiva    db '  [ACTIVA]',13,10,'$'
+msgEstInactiva  db '  [INACTIVA]',13,10,'$'
+msgPedirDesact  db 13,10,'Numero a desactivar: $'
+msgDesactOk     db 13,10,'Cuenta desactivada correctamente.',13,10,'$'
+msgYaInactiva   db 13,10,'Error: la cuenta ya esta inactiva.',13,10,'$'
+msgNoEncontr    db 13,10,'Error: cuenta no encontrada.',13,10,'$'
 ;variables temporales 
-numeroCuentaTemp dw 0
-indiceEncontrado dw 0  
-saldoTemp dw 0 
+numeroCuentaTemp dd 0
+indiceEncontrado dd 0  
+saldoTemp dd 0 
+; variables del reporte
+repActivas   dw 0
+repInactivas dw 0
+repSaldoTot  dw 0
+repIdxMayor  dw 0
+repIdxMenor  dw 0
 
 bufferNombre db MAX_NOMBRE, 0, MAX_NOMBRE+1 dup(0)
 
@@ -117,13 +143,11 @@ opcion4:
 
 
 opcion5:
-       lea dx, msgReporte
-       call imprimir_cadena
+       call mostrar_reporte
        jmp inicio_menu
 
 opcion6:
-       lea dx, msgDesact
-       call imprimir_cadena
+       call desactivar_cuenta
        jmp inicio_menu
 
 salir_programa:
@@ -527,28 +551,31 @@ depositar_dinero proc
     call buscar_cuenta_por_numero
     jnc cuenta_no_encontrada
 
+    ; calcular indice
     mov bx,indiceEncontrado
     mov si,bx
     shl si,1
 
+    ; pedir monto
     lea dx,msgMonto
     call imprimir_cadena
 
     call leer_entero
     jc fin_deposito
 
-    mov ax,ax
-    call validar_monto
+    mov dx,ax        ; guardar monto
 
+    call validar_monto
     cmp bx,0
     je error_monto_deposito
 
+    ; sumar saldo
     mov bx,indiceEncontrado
     mov si,bx
     shl si,1
 
     mov ax,cuentasSaldo[si]
-    add ax,ax
+    add ax,dx
     mov cuentasSaldo[si],ax
 
     lea dx,msgDepositoOk
@@ -557,14 +584,13 @@ depositar_dinero proc
     jmp fin_deposito
 
 cuenta_no_encontrada:
-    lea dx,msgErrorCuenta
+    lea dx,msgCuentaNoExiste
     call imprimir_cadena
     jmp fin_deposito
 
 error_monto_deposito:
     lea dx,msgErrorSaldo
     call imprimir_cadena
-
 
 fin_deposito:
     ret
@@ -609,7 +635,7 @@ retirar_dinero proc
     jmp fin_retiro
 
 cuenta_no_encontrada_r:
-    lea dx,msgErrorCuenta
+    lea dx,msgCuentaNoExiste
     call imprimir_cadena
     jmp fin_retiro
 
@@ -642,6 +668,7 @@ consultar_saldo proc
 
     ; SALTO DE LINEA
     lea dx,saltoLinea
+    lea dx,msgSaldoActual
     call imprimir_cadena
 
     mov ax,cuentasSaldo[si]
@@ -650,7 +677,7 @@ consultar_saldo proc
     jmp fin_consulta
 
 cuenta_noo_encontrada:
-    lea dx,msgErrorCuenta
+    lea dx,msgCuentaNoExiste
     call imprimir_cadena
 
 fin_consulta:
@@ -659,9 +686,348 @@ fin_consulta:
 consultar_saldo endp
 
 
+; ==========================================================
+; MOSTRAR REPORTE
+;   Recorre todos los arreglos y calcula:
+;     - repActivas / repInactivas
+;     - repSaldoTot (suma de todos los saldos)
+;     - repIdxMayor / repIdxMenor (indice byte)
+;   Registros: BX=indice byte, SI=indice word, CX=contador
+; ==========================================================
+mostrar_reporte proc
+    push ax
+    push bx
+    push cx
+    push dx
+    push si
+
+    cmp contadorCuentas, 0
+    je mr_sin_cuentas
+
+    mov repActivas,   0
+    mov repInactivas, 0
+    mov repSaldoTot,  0
+    mov repIdxMayor,  0
+    mov repIdxMenor,  0
+
+    xor bx, bx
+    xor si, si
+    mov cx, contadorCuentas
+
+mr_loop:
+    cmp cx, 0
+    je mr_mostrar
+
+    cmp cuentasEstado[bx], 1
+    jne mr_inact
+    inc repActivas
+    jmp mr_saldo
+mr_inact:
+    inc repInactivas
+
+mr_saldo:
+    mov ax, cuentasSaldo[si]
+    add repSaldoTot, ax
+
+    ;comparar con mayor (JBE = menor o igual sin signo)
+    mov dx, repIdxMayor
+    shl dx, 1
+    mov di, dx              ;DI = offset word del actual mayor
+    cmp ax, cuentasSaldo[di]
+    jbe mr_menor
+    mov repIdxMayor, bx
+
+mr_menor:
+    ;comparar con menor (JAE = mayor o igual sin signo)
+    mov dx, repIdxMenor
+    shl dx, 1
+    mov di, dx              ;DI = offset word del actual menor
+    cmp ax, cuentasSaldo[di]
+    jae mr_sig
+    mov repIdxMenor, bx
+
+mr_sig:
+    inc bx
+    add si, 2
+    dec cx
+    jmp mr_loop
+
+mr_mostrar:
+    lea dx, msgReporte
+    call imprimir_cadena
+
+    lea dx, msgRepActivas
+    call imprimir_cadena
+    mov ax, repActivas
+    call imprimir_numero
+    lea dx, msgSaltoLinea
+    call imprimir_cadena
+
+    lea dx, msgRepInactivas
+    call imprimir_cadena
+    mov ax, repInactivas
+    call imprimir_numero
+    lea dx, msgSaltoLinea
+    call imprimir_cadena
+
+    lea dx, msgRepSaldoTot
+    call imprimir_cadena
+    mov ax, repSaldoTot
+    call imprimir_numero
+    lea dx, msgSaltoLinea
+    call imprimir_cadena
+
+    lea dx, msgRepMayor
+    call imprimir_cadena
+    mov bx, repIdxMayor
+    call mostrar_nombre_en_indice
+    lea dx, msgSaltoLinea
+    call imprimir_cadena
+
+    lea dx, msgRepMenor
+    call imprimir_cadena
+    mov bx, repIdxMenor
+    call mostrar_nombre_en_indice
+    lea dx, msgSaltoLinea
+    call imprimir_cadena
+
+    jmp mr_fin
+
+mr_sin_cuentas:
+    lea dx, msgSinCuentas
+    call imprimir_cadena
+
+mr_fin:
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+mostrar_reporte endp
 
 
+; ==========================================================
+; DESACTIVAR CUENTA
+;   Muestra lista con estados, pide numero de cuenta,
+;   lo busca sin importar estado, y si esta activa
+;   la marca como inactiva (cuentasEstado[bx] = 0).
+; ==========================================================
+desactivar_cuenta proc
+    push ax
+    push bx
+    push dx
+
+    cmp contadorCuentas, 0
+    je dc_sin_cuentas
+
+    lea dx, msgDesact
+    call imprimir_cadena
+
+    call mostrar_lista_cuentas
+
+    lea dx, msgPedirDesact
+    call imprimir_cadena
+
+    call leer_entero
+    jc fin_desactivar
+
+    mov numeroCuentaTemp, ax
+    call buscar_cuenta_todos    ;busca sin filtrar por estado
+    jnc dc_no_enc
+
+    mov bx, indiceEncontrado
+    cmp cuentasEstado[bx], 0
+    je dc_ya_inact
+
+    mov byte ptr cuentasEstado[bx], 0
+    lea dx, msgDesactOk
+    call imprimir_cadena
+    jmp fin_desactivar
+
+dc_ya_inact:
+    lea dx, msgYaInactiva
+    call imprimir_cadena
+    jmp fin_desactivar
+
+dc_no_enc:
+    lea dx, msgNoEncontr
+    call imprimir_cadena
+    jmp fin_desactivar
+
+dc_sin_cuentas:
+    lea dx, msgSinCuentas
+    call imprimir_cadena
+
+fin_desactivar:
+    pop dx
+    pop bx
+    pop ax
+    ret
+desactivar_cuenta endp
 
 
+; ==========================================================
+; MOSTRAR LISTA CUENTAS
+;   Imprime cada cuenta con: numero, nombre, saldo y estado.
+;   Formato: Num: XXXX - Nombre  Saldo: XXXX  [ACTIVA/INACTIVA]
+;   Registros: BX=indice byte, SI=indice word, CX=contador
+; ==========================================================
+mostrar_lista_cuentas proc
+    push ax
+    push bx
+    push cx
+    push dx
+    push si
+
+    lea dx, msgListaCtas
+    call imprimir_cadena
+
+    xor bx, bx
+    xor si, si
+    mov cx, contadorCuentas
+
+mlc_loop:
+    cmp cx, 0
+    je mlc_fin
+
+    lea dx, msgNumCta
+    call imprimir_cadena
+    mov ax, cuentasNumero[si]
+    call imprimir_numero
+
+    lea dx, msgSepNom
+    call imprimir_cadena
+    call mostrar_nombre_en_indice   ;BX = indice byte
+
+    lea dx, msgSaldoCta
+    call imprimir_cadena
+    mov ax, cuentasSaldo[si]
+    call imprimir_numero
+
+    cmp cuentasEstado[bx], 1
+    jne mlc_inact
+    lea dx, msgEstActiva
+    call imprimir_cadena
+    jmp mlc_sig
+mlc_inact:
+    lea dx, msgEstInactiva
+    call imprimir_cadena
+
+mlc_sig:
+    inc bx
+    add si, 2
+    dec cx
+    jmp mlc_loop
+
+mlc_fin:
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+mostrar_lista_cuentas endp
+
+
+; ==========================================================
+; BUSCAR CUENTA TODOS
+;   Igual que buscar_cuenta_por_numero pero sin filtrar
+;   por estado: sirve para encontrar cuentas inactivas.
+;   Retorna CF=1 si encontrada, indiceEncontrado = indice byte
+; ==========================================================
+buscar_cuenta_todos proc
+    push ax
+    push bx
+    push cx
+    push si
+
+    mov ax, numeroCuentaTemp
+    mov cx, contadorCuentas
+    xor bx, bx
+    xor si, si
+
+bct_loop:
+    cmp cx, 0
+    je bct_no_enc
+
+    cmp cuentasNumero[si], ax
+    je bct_enc
+
+    add si, 2
+    inc bx
+    dec cx
+    jmp bct_loop
+
+bct_enc:
+    mov indiceEncontrado, bx
+    stc
+    jmp bct_sal
+
+bct_no_enc:
+    clc
+
+bct_sal:
+    pop si
+    pop cx
+    pop bx
+    pop ax
+    ret
+buscar_cuenta_todos endp
+
+
+; ==========================================================
+; MOSTRAR NOMBRE EN INDICE
+;   Entrada: BX = indice byte de la cuenta
+;   Calcula offset = BX * MAX_NOMBRE en cuentasNombre
+;   e imprime caracter a caracter hasta null o CR.
+; ==========================================================
+mostrar_nombre_en_indice proc
+    push ax
+    push bx
+    push cx
+    push dx
+    push si
+
+    xor si, si
+    mov cx, bx          ;cx = indice, para calcular offset
+
+mnei_off:
+    cmp cx, 0
+    je mnei_chars
+    add si, MAX_NOMBRE
+    dec cx
+    jmp mnei_off
+
+mnei_chars:
+    mov cx, MAX_NOMBRE  ;cx ahora es contador de chars
+
+mnei_loop:
+    cmp cx, 0
+    je mnei_fin
+    mov al, cuentasNombre[si]
+    cmp al, 0
+    je mnei_fin
+    cmp al, 13
+    je mnei_fin
+    mov dl, al
+    mov ah, 02h
+    int 21h
+    inc si
+    dec cx
+    jmp mnei_loop
+
+mnei_fin:
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+mostrar_nombre_en_indice endp  
+
+ 
+
+ 
 
 end main
