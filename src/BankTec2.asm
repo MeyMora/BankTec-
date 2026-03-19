@@ -181,44 +181,49 @@ imprimir_cadena endp
 
 
 imprimir_numero proc
+    ;Se guardan los registros porque se van a modificar
     push ax
     push bx
     push cx
     push dx
 
-    cmp ax,0
-    jne convertir
+    cmp ax,0              ;Compara si el numero es 0
+    jne convertir         ;Si no es 0, salta a convertir
 
-    mov dl,'0'
-    mov ah,02h
-    int 21h
-    jmp fin_impresion
+    ;Si el numero es 0, imprime directamente '0'
+    mov dl,'0'            ;DL = caracter '0'
+    mov ah,02h            ;Funcion para imprimir un caracter
+    int 21h               ;Interrupcion DOS
+    jmp fin_impresion     ;Salir
 
 convertir:
-    mov bx,10
-    xor cx,cx
+    mov bx,10             ;BX = 10 (base decimal)
+    xor cx,cx             ;CX = 0 (contador de digitos)
 
+;Divide el numero entre 10 repetidamente para obtener cada digito
 dividir:
-    xor dx,dx
-    div bx
-    push dx
-    inc cx
-    cmp ax,0
-    jne dividir
+    xor dx,dx             ;Limpia DX antes de la division
+    div bx                ;AX / 10 ? AX = cociente, DX = residuo
+    push dx               ;Guarda el residuo (digito) en la pila
+    inc cx                ;Aumenta contador de digitos
+    cmp ax,0              ;Verifica si ya no quedan m�s digitos
+    jne dividir           ;Si no, sigue dividiendo
 
+;Imprime los d�gitos en orden correcto (usando la pila)
 imprimir_digito:
-    pop dx
-    add dl,'0'
-    mov ah,02h
-    int 21h
-    loop imprimir_digito
+    pop dx                ;Saca un digito de la pila
+    add dl,'0'            ;Convierte numero a caracter ASCII
+    mov ah,02h            ;Funcion para imprimir caracter
+    int 21h               ;Interrupcion DOS
+    loop imprimir_digito  ;Repite hasta imprimir todos los digitos
 
 fin_impresion:
+    ;Recupera los valores originales de los registros
     pop dx
     pop cx
     pop bx
     pop ax
-    ret
+    ret                   ;Regresa al programa principal
 imprimir_numero endp
 
 
@@ -257,8 +262,8 @@ crear_cuenta proc
     lea dx, msgPedirSaldo      ; Carga en DX la dirección del mensaje msgPedirSaldo.
     call imprimir_cadena       ;Llama al procedimiento que imprime el texto en pantalla.
     
-    call leer_entero           ; llama a leer_entero que lee un número que el usuario escribe
-    jc saldo_invalido          ; Si hubo error al leer el número (Carry Flag = 1), el programa salta al procedimiento saldo_invalido
+    call leer_entero           ; llama a leer_entero que lee un numero que el usuario escribe
+    jc saldo_invalido          ; Si hubo error al leer el numero (Carry Flag = 1), el programa salta al procedimiento saldo_invalido
     
     mov saldoTemp, ax          ; Guarda el valor del registro ax en la variable saldoTemp
     
@@ -266,10 +271,10 @@ crear_cuenta proc
     mov bx, contadorCuentas    ; Copia el valor de contadorCuentas en bx.
     
     ;Guardar numero cuenta
-    mov si, bx                 ; Copia el índice a si
+    mov si, bx                 ; Copia el indice a si
     shl si, 1                  ; Desplaza a la izquierda y multiplica por 2 porque cada elemento ocupa 2 bytes
-    mov ax, numeroCuentaTemp   ; Carga el número de cuenta que el usuario escribió
-    mov cuentasNumero[si], ax  ; Guarda ese número en el arreglo cuentasNumero
+    mov ax, numeroCuentaTemp   ; Carga el numero de cuenta que el usuario escribió
+    mov cuentasNumero[si], ax  ; Guarda ese numero en el arreglo cuentasNumero
     
     
     ;Guardar Saldo
@@ -545,43 +550,48 @@ validar_monto endp
 
 depositar_dinero proc
 
+    ;Pide el numero de cuenta al usuario
     lea dx,msgPedirCuenta
     call imprimir_cadena
 
-    call leer_entero
-    jc fin_deposito
+    call leer_entero          ;AX = numero ingresado
+    jc fin_deposito           ;Si hay error, salir
 
-    mov numeroCuentaTemp,ax
+    mov numeroCuentaTemp,ax   ;Guarda el numero temporalmente
 
+    ;Busca la cuenta en el arreglo
     call buscar_cuenta_por_numero
-    jnc cuenta_no_encontrada
+    jnc cuenta_no_encontrada  ;Si no existe, salta a error
 
-    ; calcular indice
-    mov bx,indiceEncontrado
-    mov si,bx
-    shl si,1
+    ;Calcular Indice de la cuenta
+    mov bx,indiceEncontrado   ;BX = Indice de la cuenta
+    mov si,bx                 ;SI = Indice
+    shl si,1                  ;SI = Indice * 2 (porque saldo es word)
 
-    ; pedir monto
+    ;Pedir el monto a depositar
     lea dx,msgMonto
     call imprimir_cadena
 
-    call leer_entero
+    call leer_entero          ;AX = monto ingresado
     jc fin_deposito
 
-    mov dx,ax        ; guardar monto
+    mov dx,ax                 ;Guarda el monto en DX
 
+    ;Validar que el monto sea mayor que 0
     call validar_monto
-    cmp bx,0
+    cmp bx,0                  ;Si BX = 0 ? monto invalido 
     je error_monto_deposito
 
-    ; sumar saldo
+    ;Volver a calcular posicion en el arreglo
     mov bx,indiceEncontrado
     mov si,bx
     shl si,1
 
-    mov ax,cuentasSaldo[si]
-    add ax,dx
-    mov cuentasSaldo[si],ax
+    mov ax,cuentasSaldo[si]   ;AX = saldo actual
+
+    add ax,dx                 ;Suma el monto al saldo
+
+    mov cuentasSaldo[si],ax   ;Guarda el nuevo saldo
 
     lea dx,msgDepositoOk
     call imprimir_cadena
@@ -599,40 +609,45 @@ error_monto_deposito:
 
 fin_deposito:
     ret
-
 depositar_dinero endp
 
 retirar_dinero proc
 
+    ;Pide n�mero de cuenta
     lea dx,msgPedirCuenta
     call imprimir_cadena
 
-    call leer_entero
+    call leer_entero          ;AX = numero ingresado
     jc fin_retiro
 
     mov numeroCuentaTemp,ax
 
+    ;Busca la cuenta
     call buscar_cuenta_por_numero
     jnc cuenta_no_encontrada_r
 
+    ;Calcular �ndice
     mov bx,indiceEncontrado
     mov si,bx
-    shl si,1
+    shl si,1                  ;SI = Indice * 2
 
+    ;Pedir monto a retirar
     lea dx,msgMonto
     call imprimir_cadena
 
-    call leer_entero
+    call leer_entero          ;AX = monto
     jc fin_retiro
 
-    mov dx,ax
+    mov dx,ax                 ;DX = monto
 
-    mov ax,cuentasSaldo[si]
-    cmp ax,dx
-    jl fondos_insuficientes
+    mov ax,cuentasSaldo[si]   ;AX = saldo actual
 
-    sub ax,dx
-    mov cuentasSaldo[si],ax
+    cmp ax,dx                 ;Compara saldo con monto
+    jl fondos_insuficientes   ;Si saldo < monto ? error
+
+    sub ax,dx                 ;Resta el monto al saldo
+
+    mov cuentasSaldo[si],ax   ;Guarda el nuevo saldo
 
     lea dx,msgRetiroOk
     call imprimir_cadena
@@ -650,34 +665,40 @@ fondos_insuficientes:
 
 fin_retiro:
     ret
-
 retirar_dinero endp
 
 
 consultar_saldo proc
 
+    ;Pide numero de cuenta
     lea dx,msgPedirCuenta
     call imprimir_cadena
 
-    call leer_entero
+    call leer_entero          ;AX = numero ingresado
     jc fin_consulta
 
     mov numeroCuentaTemp,ax
 
+    ;Busca la cuenta
     call buscar_cuenta_por_numero
     jnc cuenta_noo_encontrada
 
+    ;Calcular indice
     mov bx,indiceEncontrado
     mov si,bx
-    shl si,1
+    shl si,1                  ;SI = Indice * 2
 
-    ; SALTO DE LINEA
+    ;Imprime salto de linea
     lea dx,saltoLinea
+    call imprimir_cadena
+
+    ;Imprime mensaje de saldo
     lea dx,msgSaldoActual
     call imprimir_cadena
 
-    mov ax,cuentasSaldo[si]
-    call imprimir_numero
+    mov ax,cuentasSaldo[si]   ;AX = saldo actual
+
+    call imprimir_numero      ;Imprime el saldo
 
     jmp fin_consulta
 
@@ -687,7 +708,6 @@ cuenta_noo_encontrada:
 
 fin_consulta:
     ret
-
 consultar_saldo endp
 
 
