@@ -3,8 +3,8 @@
 
 .data  
 
-MAX_CUENTAS equ 10     ; cantidad máxima de cuentas permitidas
-MAX_NOMBRE equ 20      ; tamaño máximo del nombre
+MAX_CUENTAS equ 10     ; cantidad mÃ¡xima de cuentas permitidas
+MAX_NOMBRE equ 20      ; tamaÃ±o mÃ¡ximo del nombre
 
 msgMenu db 13,10,'=============== BankTec ================', 13,10
         db '1. Crear cuenta', 13,10
@@ -71,8 +71,8 @@ msgYaInactiva   db 13,10,'Error: la cuenta ya esta inactiva.',13,10,'$'
 msgNoEncontr    db 13,10,'Error: cuenta no encontrada.',13,10,'$'
 
 ;================ VARIABLES TEMPORALES =================
-numeroCuentaTemp dd 0  ; guarda temporalmente el número de cuenta
-indiceEncontrado dd 0  ; índice donde se encontró la cuenta
+numeroCuentaTemp dd 0  ; guarda temporalmente el nÃºmero de cuenta
+indiceEncontrado dd 0  ; Ã­ndice donde se encontrÃ³ la cuenta
 saldoTemp dd 0         ; saldo temporal para operaciones
 ; variables del reporte
 repActivas   dw 0
@@ -86,7 +86,7 @@ bufferNombre db MAX_NOMBRE, 0, MAX_NOMBRE+1 dup(0) ; buffer para leer nombres
 
 
 ;========== ARREGLOS PARA MANEJO DE CUENTAS ==========
-cuentasNumero dw MAX_CUENTAS dup(?)  ; números de cuenta
+cuentasNumero dw MAX_CUENTAS dup(?)  ; nÃºmeros de cuenta
 cuentasSaldo  dw MAX_CUENTAS dup(?)  ; saldo de cada cuenta
 cuentasEstado db MAX_CUENTAS dup(?)  ; estado (activa/inactiva)
 cuentasNombre db MAX_CUENTAS * MAX_NOMBRE dup(?) ; nombres de las cuentas
@@ -95,7 +95,7 @@ contadorCuentas dw 0  ; cantidad actual de cuentas creadas
 .code
 
 main proc                    ;inicia procedimiento llamado main 
-        mov ax, @data        ;Se mueve la dirección @data al registro ax 
+        mov ax, @data        ;Se mueve la direcciÃ³n @data al registro ax 
         mov ds, ax           ;Se mueve ax al registro ds
 
 inicio_menu:                 ;empieza el ciclo de menu
@@ -103,25 +103,25 @@ inicio_menu:                 ;empieza el ciclo de menu
         call leer_opcion     ; lee los caracteres ingresados por teclado
 
         cmp al, '1'          ; Compara al con 1 
-        je opcion1           ; Comparación es igual salta a opcion1 
+        je opcion1           ; ComparaciÃ³n es igual salta a opcion1 
 
         cmp al, '2'          ; Compara al con 2 
-        je opcion2           ; Si la comparación es igual salta a la opcion2 
+        je opcion2           ; Si la comparaciÃ³n es igual salta a la opcion2 
 
         cmp al, '3'          ; Compara al con 3 
-        je opcion3           ; Si la comparación es igual salta a la opcion3
+        je opcion3           ; Si la comparaciÃ³n es igual salta a la opcion3
 
         cmp al, '4'          ; Compara al con 4
-        je opcion4           ; Si la comparación es igual salta a la opcion4
+        je opcion4           ; Si la comparaciÃ³n es igual salta a la opcion4
 
         cmp al, '5'          ; Compara al con 5
-        je opcion5           ; Si la comparación es igual salta a la opcion5
+        je opcion5           ; Si la comparaciÃ³n es igual salta a la opcion5
 
         cmp al, '6'          ; Compara al con 6 
-        je opcion6           ; Si la comparación es igual salta a la opcion6 
+        je opcion6           ; Si la comparaciÃ³n es igual salta a la opcion6 
 
         cmp al, '7'          ; Compara al con 7
-        je salir_programa    ; Si la comparación es igual finaliza el programa
+        je salir_programa    ; Si la comparaciÃ³n es igual finaliza el programa
 
         lea dx, msgInvalida  ; cargar mensaje de error
         call imprimir_cadena ; mostrar "opcion invalida"
@@ -164,7 +164,7 @@ main endp
 mostrar_menu proc              ; define el procedimiento mostrar_menu
     lea dx, msgMenu            ; se carga en el registro dx, la direccion de msgMenu 
     call imprimir_cadena       ; llama a imprimir_cadena 
-    ret                        ; regresa al lugar donde se llamó el procedimiento 
+    ret                        ; regresa al lugar donde se llamÃ³ el procedimiento 
 mostrar_menu endp
 
 leer_opcion proc               ; lee un caracter del teclado 
@@ -174,7 +174,7 @@ leer_opcion proc               ; lee un caracter del teclado
 leer_opcion endp
 
 imprimir_cadena proc           ; imprime una cadena de texto en pantalla
-    mov ah,09h                 ; indica a int 21h que ejecute la función
+    mov ah,09h                 ; indica a int 21h que ejecute la funciÃ³n
     int 21h                    ; DOS imprime el texto hasta encontrar $.
     ret                        ; Regresa al programa.
 imprimir_cadena endp 
@@ -206,10 +206,10 @@ dividir:
     div bx                ;AX / 10 ? AX = cociente, DX = residuo
     push dx               ;Guarda el residuo (digito) en la pila
     inc cx                ;Aumenta contador de digitos
-    cmp ax,0              ;Verifica si ya no quedan m�s digitos
+    cmp ax,0              ;Verifica si ya no quedan más digitos
     jne dividir           ;Si no, sigue dividiendo
 
-;Imprime los d�gitos en orden correcto (usando la pila)
+;Imprime los dígitos en orden correcto (usando la pila)
 imprimir_digito:
     pop dx                ;Saca un digito de la pila
     add dl,'0'            ;Convierte numero a caracter ASCII
@@ -242,7 +242,7 @@ crear_cuenta proc
     
     
     ;Verificamos si la cuenta ya existe
-    call buscar_cuenta_por_numero  ; busca el número en buscar_cuentas_por numero, si lo encuentra activa CF = 1 
+    call buscar_cuenta_por_numero  ; busca el nÃºmero en buscar_cuentas_por numero, si lo encuentra activa CF = 1 
     jc cuenta_repetida             ; Salto a cuenta_repetida
     
     ;Verificar si hay espacio para crear la cuenta
@@ -259,7 +259,7 @@ crear_cuenta proc
     jc fin_crear_cuenta        ; termina el procedimiento y salta a fin_crear_cuenta 
     
     ;pedimos el saldo inicial 
-    lea dx, msgPedirSaldo      ; Carga en DX la dirección del mensaje msgPedirSaldo.
+    lea dx, msgPedirSaldo      ; Carga en DX la direcciÃ³n del mensaje msgPedirSaldo.
     call imprimir_cadena       ;Llama al procedimiento que imprime el texto en pantalla.
     
     call leer_entero           ; llama a leer_entero que lee un numero que el usuario escribe
@@ -273,7 +273,7 @@ crear_cuenta proc
     ;Guardar numero cuenta
     mov si, bx                 ; Copia el indice a si
     shl si, 1                  ; Desplaza a la izquierda y multiplica por 2 porque cada elemento ocupa 2 bytes
-    mov ax, numeroCuentaTemp   ; Carga el numero de cuenta que el usuario escribió
+    mov ax, numeroCuentaTemp   ; Carga el numero de cuenta que el usuario escribiÃ³
     mov cuentasNumero[si], ax  ; Guarda ese numero en el arreglo cuentasNumero
     
     
@@ -295,13 +295,13 @@ crear_cuenta proc
     
     lea dx, msgCuentaGuardada  ; carga el mensaje en dx
     call imprimir_cadena       ; llama a imprimir el texto en pantalla
-    jmp fin_crear_cuenta       ; Salta al final del procedimiento para terminar la operación
+    jmp fin_crear_cuenta       ; Salta al final del procedimiento para terminar la operaciÃ³n
     
    
 
 cuenta_repetida:
     
-        lea dx, msgCuentaExiste ; Carga en DX la dirección del mensaje.
+        lea dx, msgCuentaExiste ; Carga en DX la direcciÃ³n del mensaje.
         call imprimir_cadena    ; Imprime el mensaje en pantalla.
         jmp fin_crear_cuenta    ;salto incondicional a fin de procedimiento 
         
@@ -317,7 +317,7 @@ saldo_invalido:
     jmp fin_crear_cuenta  ; fin del procedimiento 
               
 fin_crear_cuenta:         ; punto de salida comun
-    ret                   ; regresar al lugar donde se llamó el procedimiento, en este caso regresa al menu. 
+    ret                   ; regresar al lugar donde se llamÃ³ el procedimiento, en este caso regresa al menu. 
 crear_cuenta endp
 
 
@@ -332,7 +332,7 @@ leer_entero proc
     xor cx, cx ; limpia el registro cx
 
 leer_digito:
-    ;leer un carácter del teclado.
+    ;leer un carÃ¡cter del teclado.
     mov ah, 01h
     int 21h
 
@@ -340,15 +340,15 @@ leer_digito:
     je fin_lectura      ; Si es enter, salta a la etiqueta fin_lectura.
 
     cmp al, '0'        ; compara si el caracter es menor que 0 
-    jb error_no_digito ; Si el carácter es menor que '0', entonces no es un número.
+    jb error_no_digito ; Si el carÃ¡cter es menor que '0', entonces no es un nÃºmero.
 
     cmp al, '9'        ; verifica si el caracter es mayor que 9
-    ja error_no_digito ; Si el carácter es mayor que '9', tampoco es número.
+    ja error_no_digito ; Si el carÃ¡cter es mayor que '9', tampoco es nÃºmero.
 
     sub al, '0'        ;resta para convertir el caracter ASCII  a numero real 
     mov ah, 0          ; ah contiene el numero convertido 
 
-    push ax            ; Guarda el dígito en la pila porque se va a usar AX para multiplicar.
+    push ax            ; Guarda el dÃ­gito en la pila porque se va a usar AX para multiplicar.
     mov ax, bx         ; mueve el digito a ax 
     mov dx, 10         ; mueve 10 a dx
     mul dx             ; se multiplica el digito por 10 que esta en dx
@@ -356,7 +356,7 @@ leer_digito:
     pop ax             ; recupera el digito que se guardo antes
     add bx, ax         ; suma el nuevo digito
 
-    inc cx             ; Incrementa el contador de dígitos.
+    inc cx             ; Incrementa el contador de dÃ­gitos.
     jmp leer_digito    ; lee el siguiente digito
 
 fin_lectura:
@@ -368,7 +368,7 @@ fin_lectura:
     jmp salir_leer_entero  ; salta a leer entero
 
 error_no_digito:  
-    lea dx, msgErrorCuenta  ; Carga la dirección del mensaje en DX
+    lea dx, msgErrorCuenta  ; Carga la direcciÃ³n del mensaje en DX
     call imprimir_cadena    ; imprime el mensaje 
     stc                     ; Set Carry Flag, significa CF = 1, hay error
     jmp salir_leer_entero   ; Salta a la parte final del procedimiento para limpiar la pila y salir.
@@ -390,12 +390,12 @@ leer_entero endp
 ;Buscar la cuenta por numero 
 buscar_cuenta_por_numero proc
     push ax                  ; numero de cuenta a buscar 
-    push bx                  ; índice del arreglo
+    push bx                  ; Ã­ndice del arreglo
     push cx                  ; contador de cuentas 
     push si                  ; desplazamiento en memoria
     
-    mov ax, numeroCuentaTemp ; se carga en AX el número de cuenta que el usuario ingresó.
-    mov cx, contadorCuentas  ; cx será el contador del ciclo de búsqueda.
+    mov ax, numeroCuentaTemp ; se carga en AX el nÃºmero de cuenta que el usuario ingresÃ³.
+    mov cx, contadorCuentas  ; cx serÃ¡ el contador del ciclo de bÃºsqueda.
     xor bx, bx               ;registro bx en 0 
     xor si, si               ;registro si en 0
     
@@ -407,7 +407,7 @@ buscar_loop:
        jne siguiente               ; si no son iguales salta a la siguiente
         
         
-       cmp cuentasEstado[bx],1     ; aunque el número coincida, se verifica que la cuenta esté activa.
+       cmp cuentasEstado[bx],1     ; aunque el nÃºmero coincida, se verifica que la cuenta estÃ© activa.
        je encontrada               ; si esta activa salta a encontrada
 
 siguiente:
@@ -441,7 +441,7 @@ leer_nombre proc
        push ax
        push dx
        
-       lea dx, bufferNombre  ; se carga en DX la dirección del buffer donde se almacenará el nombre
+       lea dx, bufferNombre  ; se carga en DX la direcciÃ³n del buffer donde se almacenarÃ¡ el nombre
        mov ah, 0Ah           ; Se coloca 0Ah en AH, es para leer una cadena desde el teclado.
        int 21h               ; ejecuta funcion DOS
        
@@ -462,7 +462,7 @@ salir_leer_nombre:
                                   ; se recuperan los valores de los registros originales 
     pop dx
     pop ax
-    ret                           ; regresa al lugar donde se llamó el procedimiento
+    ret                           ; regresa al lugar donde se llamÃ³ el procedimiento
 
 leer_nombre endp
 
@@ -478,7 +478,7 @@ guardar_nombre_en_indice proc
        push di
        
        xor di,di  ; pone DI = 0
-       mov cx, bx ; copia el índice de la cuenta a CX
+       mov cx, bx ; copia el Ã­ndice de la cuenta a CX
 
 ;calcular el offset destino que es igual a indice * MAX_NOMBRE     
 calc_offset:
@@ -490,8 +490,8 @@ calc_offset:
     
 offset_listo:
      ;limpia los 20 bytes del nombre destino\ 
-     mov si, di         ; posición donde inicia el nombre
-     mov cx, MAX_NOMBRE ; número de bytes a limpiar
+     mov si, di         ; posiciÃ³n donde inicia el nombre
+     mov cx, MAX_NOMBRE ; nÃºmero de bytes a limpiar
 
      
 limpiar_destino:
@@ -503,7 +503,7 @@ limpiar_destino:
         
         
        ;copiar el nombre
-       lea si, bufferNombre+2   ; apunta al primer carácter del nombre
+       lea si, bufferNombre+2   ; apunta al primer carÃ¡cter del nombre
        mov cl, [bufferNombre+1] ; Carga en CL la cantidad de caracteres escritos
        xor ch, ch               ; Limpia la parte alta de CX
        
@@ -511,12 +511,12 @@ copiar_nombre:
     cmp cx, 0                   ; compara si cx es igual a 0, lo que significa que ya se copiaron todos los caracteres
     je fin_guardar_nombre       ; salta a procedimiento guardar nombre
     
-    mov al, [si]                ; Lee un carácter del nombre
-    mov cuentasNombre[di], al   ; Guarda ese carácter en el arreglo de nombres
-    inc si                      ; Avanza al siguiente carácter del buffer
+    mov al, [si]                ; Lee un carÃ¡cter del nombre
+    mov cuentasNombre[di], al   ; Guarda ese carÃ¡cter en el arreglo de nombres
+    inc si                      ; Avanza al siguiente carÃ¡cter del buffer
     inc di                      ; Avanza al siguiente byte en el destino
     dec cx                      ; Reduce el contador de caracteres restantes
-    jmp copiar_nombre           ; Regresa al inicio del ciclo para copiar el siguiente carácter
+    jmp copiar_nombre           ; Regresa al inicio del ciclo para copiar el siguiente carÃ¡cter
     
                 
 fin_guardar_nombre:             ;Recupera los valores originales de los registros
@@ -526,7 +526,7 @@ fin_guardar_nombre:             ;Recupera los valores originales de los registro
     pop cx
     pop bx
     pop ax
-    ret                         ; Vuelve al lugar donde se llamó el procedimiento
+    ret                         ; Vuelve al lugar donde se llamÃ³ el procedimiento
 guardar_nombre_en_indice endp
 
 
@@ -613,7 +613,7 @@ depositar_dinero endp
 
 retirar_dinero proc
 
-    ;Pide n�mero de cuenta
+    ;Pide número de cuenta
     lea dx,msgPedirCuenta
     call imprimir_cadena
 
@@ -626,7 +626,7 @@ retirar_dinero proc
     call buscar_cuenta_por_numero
     jnc cuenta_no_encontrada_r
 
-    ;Calcular �ndice
+    ;Calcular índice
     mov bx,indiceEncontrado
     mov si,bx
     shl si,1                  ;SI = Indice * 2
@@ -720,71 +720,77 @@ consultar_saldo endp
 ;   Registros: BX=indice byte, SI=indice word, CX=contador
 ; ==========================================================
 mostrar_reporte proc
+    ; guardamos los registros que vamos a usar
     push ax
     push bx
     push cx
     push dx
     push si
 
-    cmp contadorCuentas, 0
+    cmp contadorCuentas, 0    ; si no hay cuentas no hay nada que reportar
     je mr_sin_cuentas
 
+    ; reiniciar variables antes de recorrer el arreglo
     mov repActivas,   0
     mov repInactivas, 0
     mov repSaldoTot,  0
-    mov repIdxMayor,  0
-    mov repIdxMenor,  0
+    mov repIdxMayor,  0       ; arranca asumiendo que la cuenta 0 es la mayor
+    mov repIdxMenor,  0       ; arranca asumiendo que la cuenta 0 es la menor
 
-    xor bx, bx
-    xor si, si
-    mov cx, contadorCuentas
+    xor bx, bx                ; BX = indice byte (para cuentasEstado y cuentasNombre)
+    xor si, si                ; SI = indice word (para cuentasNumero y cuentasSaldo, offset = indice*2)
+    mov cx, contadorCuentas   ; CX = cuantas cuentas hay que recorrer
 
 mr_loop:
-    cmp cx, 0
+    cmp cx, 0                 ; si CX llego a 0 ya revisamos todas las cuentas
     je mr_mostrar
 
-    cmp cuentasEstado[bx], 1
-    jne mr_inact
-    inc repActivas
+    ; verificar el estado de la cuenta actual
+    cmp cuentasEstado[bx], 1  ; estado 1 = activa
+    jne mr_inact              ; si no es 1, es inactiva
+    inc repActivas            ; sumar al contador de activas
     jmp mr_saldo
 mr_inact:
-    inc repInactivas
+    inc repInactivas          ; sumar al contador de inactivas
 
 mr_saldo:
-    mov ax, cuentasSaldo[si]
-    add repSaldoTot, ax
+    mov ax, cuentasSaldo[si]  ; AX = saldo de la cuenta actual
+    add repSaldoTot, ax       ; acumulamos en el saldo total del banco
 
-    ;comparar con mayor (JBE = menor o igual sin signo)
+    ; --- comparar con el mayor actual ---
+    ; repIdxMayor guarda el indice byte, pero cuentasSaldo es word
+    ; entonces multiplicamos por 2 (SHL 1) para obtener el offset correcto
     mov dx, repIdxMayor
-    shl dx, 1
-    mov di, dx              ;DI = offset word del actual mayor
-    cmp ax, cuentasSaldo[di]
-    jbe mr_menor
-    mov repIdxMayor, bx
+    shl dx, 1                 ; DX = repIdxMayor * 2 (offset en cuentasSaldo)
+    mov di, dx                ; DI = offset (DX no se puede usar como indice en 8086)
+    cmp ax, cuentasSaldo[di]  ; comparamos saldo actual con el mayor registrado
+    jbe mr_menor              ; si AX <= mayor actual, no actualizamos
+    mov repIdxMayor, bx       ; si AX > mayor actual, guardamos el nuevo indice
 
 mr_menor:
-    ;comparar con menor (JAE = mayor o igual sin signo)
+    ; misma logica pero para encontrar el menor
     mov dx, repIdxMenor
-    shl dx, 1
-    mov di, dx              ;DI = offset word del actual menor
-    cmp ax, cuentasSaldo[di]
-    jae mr_sig
-    mov repIdxMenor, bx
+    shl dx, 1                 ; DX = repIdxMenor * 2
+    mov di, dx                ; DI = offset
+    cmp ax, cuentasSaldo[di]  ; comparamos saldo actual con el menor registrado
+    jae mr_sig                ; si AX >= menor actual, no actualizamos
+    mov repIdxMenor, bx       ; si AX < menor actual, guardamos el nuevo indice
 
 mr_sig:
-    inc bx
-    add si, 2
-    dec cx
+    inc bx                    ; avanzar indice byte (estados y nombres)
+    add si, 2                 ; avanzar indice word (numeros y saldos)
+    dec cx                    ; una cuenta menos por revisar
     jmp mr_loop
 
 mr_mostrar:
+    ; ya tenemos todos los datos calculados, ahora imprimimos
     lea dx, msgReporte
     call imprimir_cadena
 
-    lea dx, msgRepActivas
+    lea dx, msgRepActivas     ; imprimir etiqueta "Cuentas activas"
     call imprimir_cadena
-    mov ax, repActivas
-    call imprimir_numero
+    mov ax, repActivas        ; cargar el valor calculado en AX
+    call imprimir_numero      ; convertir AX a ASCII e imprimir
     lea dx, msgSaltoLinea
     call imprimir_cadena
 
@@ -797,21 +803,21 @@ mr_mostrar:
 
     lea dx, msgRepSaldoTot
     call imprimir_cadena
-    mov ax, repSaldoTot
+    mov ax, repSaldoTot       ; suma de todos los saldos del banco
     call imprimir_numero
     lea dx, msgSaltoLinea
     call imprimir_cadena
 
     lea dx, msgRepMayor
     call imprimir_cadena
-    mov bx, repIdxMayor
-    call mostrar_nombre_en_indice
+    mov bx, repIdxMayor       ; BX = indice byte de la cuenta con mayor saldo
+    call mostrar_nombre_en_indice  ; imprime el nombre de esa cuenta
     lea dx, msgSaltoLinea
     call imprimir_cadena
 
     lea dx, msgRepMenor
     call imprimir_cadena
-    mov bx, repIdxMenor
+    mov bx, repIdxMenor       ; BX = indice byte de la cuenta con menor saldo
     call mostrar_nombre_en_indice
     lea dx, msgSaltoLinea
     call imprimir_cadena
@@ -819,7 +825,7 @@ mr_mostrar:
     jmp mr_fin
 
 mr_sin_cuentas:
-    lea dx, msgSinCuentas
+    lea dx, msgSinCuentas     ; avisamos que no hay nada que mostrar
     call imprimir_cadena
 
 mr_fin:
@@ -843,45 +849,47 @@ desactivar_cuenta proc
     push bx
     push dx
 
-    cmp contadorCuentas, 0
+    cmp contadorCuentas, 0    ; si no hay cuentas no tiene sentido continuar
     je dc_sin_cuentas
 
-    lea dx, msgDesact
+    lea dx, msgDesact         ; mostrar encabezado de la seccion
     call imprimir_cadena
 
-    call mostrar_lista_cuentas
+    call mostrar_lista_cuentas ; imprimir todas las cuentas con su estado actual
 
-    lea dx, msgPedirDesact
+    lea dx, msgPedirDesact    ; pedir el numero de cuenta a desactivar
     call imprimir_cadena
 
-    call leer_entero
-    jc fin_desactivar
+    call leer_entero          ; leer el numero ingresado, retorna en AX
+    jc fin_desactivar         ; si hubo error al leer (CF=1), salir
 
-    mov numeroCuentaTemp, ax
-    call buscar_cuenta_todos    ;busca sin filtrar por estado
-    jnc dc_no_enc
+    mov numeroCuentaTemp, ax  ; guardar el numero buscado en la variable temporal
+    call buscar_cuenta_todos  ; busca en todas las cuentas sin importar el estado
+    jnc dc_no_enc             ; si CF=0 no se encontro la cuenta
 
-    mov bx, indiceEncontrado
-    cmp cuentasEstado[bx], 0
+    ; la cuenta existe, revisar si ya estaba inactiva
+    mov bx, indiceEncontrado  ; BX = indice byte de la cuenta encontrada
+    cmp cuentasEstado[bx], 0  ; estado 0 = ya inactiva
     je dc_ya_inact
 
-    mov byte ptr cuentasEstado[bx], 0
+    ; estado era 1 (activa), entonces la desactivamos
+    mov byte ptr cuentasEstado[bx], 0  ; poner estado en 0 = inactiva
     lea dx, msgDesactOk
     call imprimir_cadena
     jmp fin_desactivar
 
 dc_ya_inact:
-    lea dx, msgYaInactiva
+    lea dx, msgYaInactiva     ; cuenta encontrada pero ya estaba inactiva
     call imprimir_cadena
     jmp fin_desactivar
 
 dc_no_enc:
-    lea dx, msgNoEncontr
+    lea dx, msgNoEncontr      ; no existe ninguna cuenta con ese numero
     call imprimir_cadena
     jmp fin_desactivar
 
 dc_sin_cuentas:
-    lea dx, msgSinCuentas
+    lea dx, msgSinCuentas     ; no hay cuentas registradas todavia
     call imprimir_cadena
 
 fin_desactivar:
@@ -908,41 +916,42 @@ mostrar_lista_cuentas proc
     lea dx, msgListaCtas
     call imprimir_cadena
 
-    xor bx, bx
-    xor si, si
-    mov cx, contadorCuentas
+    xor bx, bx                ; BX = indice byte (estados y nombres)
+    xor si, si                ; SI = indice word  (numeros y saldos)
+    mov cx, contadorCuentas   ; CX = cuantas cuentas hay que imprimir
 
 mlc_loop:
-    cmp cx, 0
+    cmp cx, 0                 ; revisamos si ya imprimimos todas
     je mlc_fin
 
-    lea dx, msgNumCta
+    lea dx, msgNumCta         ; imprimir etiqueta " Num: "
     call imprimir_cadena
-    mov ax, cuentasNumero[si]
+    mov ax, cuentasNumero[si] ; AX = numero de cuenta (word, offset = SI)
+    call imprimir_numero      ; convertir y mostrar
+
+    lea dx, msgSepNom         ; imprimir separador " - "
+    call imprimir_cadena
+    call mostrar_nombre_en_indice  ; BX tiene el indice, imprime el nombre
+
+    lea dx, msgSaldoCta       ; imprimir etiqueta "  Saldo: "
+    call imprimir_cadena
+    mov ax, cuentasSaldo[si]  ; AX = saldo de la cuenta (mismo indice word SI)
     call imprimir_numero
 
-    lea dx, msgSepNom
-    call imprimir_cadena
-    call mostrar_nombre_en_indice   ;BX = indice byte
-
-    lea dx, msgSaldoCta
-    call imprimir_cadena
-    mov ax, cuentasSaldo[si]
-    call imprimir_numero
-
-    cmp cuentasEstado[bx], 1
+    ; imprimir el estado segun el valor en cuentasEstado[bx]
+    cmp cuentasEstado[bx], 1  ; 1 = activa
     jne mlc_inact
-    lea dx, msgEstActiva
+    lea dx, msgEstActiva      ; mostrar [ACTIVA]
     call imprimir_cadena
     jmp mlc_sig
 mlc_inact:
-    lea dx, msgEstInactiva
+    lea dx, msgEstInactiva    ; mostrar [INACTIVA]
     call imprimir_cadena
 
 mlc_sig:
-    inc bx
-    add si, 2
-    dec cx
+    inc bx                    ; siguiente indice byte
+    add si, 2                 ; siguiente indice word (saltar 2 bytes)
+    dec cx                    ; una cuenta menos
     jmp mlc_loop
 
 mlc_fin:
@@ -967,30 +976,30 @@ buscar_cuenta_todos proc
     push cx
     push si
 
-    mov ax, numeroCuentaTemp
-    mov cx, contadorCuentas
-    xor bx, bx
-    xor si, si
+    mov ax, numeroCuentaTemp  ; AX = numero de cuenta que buscamos
+    mov cx, contadorCuentas   ; CX = cuantas cuentas revisar
+    xor bx, bx                ; BX = indice byte (para indiceEncontrado)
+    xor si, si                ; SI = indice word  (para cuentasNumero)
 
 bct_loop:
-    cmp cx, 0
+    cmp cx, 0                 ; si CX = 0 recorrimos todo sin encontrar
     je bct_no_enc
 
-    cmp cuentasNumero[si], ax
-    je bct_enc
+    cmp cuentasNumero[si], ax ; comparar numero de cuenta almacenado con el buscado
+    je bct_enc                ; si son iguales, encontramos la cuenta
 
-    add si, 2
-    inc bx
+    add si, 2                 ; siguiente word (2 bytes)
+    inc bx                    ; siguiente byte
     dec cx
     jmp bct_loop
 
 bct_enc:
-    mov indiceEncontrado, bx
-    stc
+    mov indiceEncontrado, bx  ; guardar el indice donde se encontro
+    stc                       ; CF = 1 para indicar que si se encontro
     jmp bct_sal
 
 bct_no_enc:
-    clc
+    clc                       ; CF = 0 para indicar que no se encontro
 
 bct_sal:
     pop si
@@ -1015,30 +1024,31 @@ mostrar_nombre_en_indice proc
     push si
 
     xor si, si
-    mov cx, bx          ;cx = indice, para calcular offset
+    mov cx, bx                ; CX = indice, lo usamos para calcular el offset
 
 mnei_off:
+    ; offset = indice * MAX_NOMBRE, se calcula sumando MAX_NOMBRE indice veces
     cmp cx, 0
     je mnei_chars
-    add si, MAX_NOMBRE
+    add si, MAX_NOMBRE        ; SI avanza MAX_NOMBRE bytes por cada cuenta anterior
     dec cx
     jmp mnei_off
 
 mnei_chars:
-    mov cx, MAX_NOMBRE  ;cx ahora es contador de chars
+    mov cx, MAX_NOMBRE        ; CX ahora actua como limite de caracteres a leer
 
 mnei_loop:
-    cmp cx, 0
+    cmp cx, 0                 ; si llegamos al limite de MAX_NOMBRE paramos
     je mnei_fin
-    mov al, cuentasNombre[si]
-    cmp al, 0
+    mov al, cuentasNombre[si] ; leer siguiente caracter del nombre
+    cmp al, 0                 ; null terminator = fin del nombre
     je mnei_fin
-    cmp al, 13
+    cmp al, 13                ; CR residual del buffer de INT 21h
     je mnei_fin
-    mov dl, al
-    mov ah, 02h
+    mov dl, al                ; mover caracter a DL para imprimirlo
+    mov ah, 02h               ; funcion 02h de INT 21h: imprimir caracter en DL
     int 21h
-    inc si
+    inc si                    ; avanzar al siguiente caracter
     dec cx
     jmp mnei_loop
 
